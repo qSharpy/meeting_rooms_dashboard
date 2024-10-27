@@ -233,9 +233,21 @@ const loadRoomEvents = useCallback(async () => {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between">
                   <span>{room.displayName}</span>
-                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(room.status)}`}>
-                    {room.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(room.status)}`}>
+                      {room.status}
+                    </span>
+                    <button
+                      onClick={() => setExpandedRoom(expandedRoom === room.id ? null : room.id)}
+                      className="p-1 hover:bg-gray-50 rounded"
+                    >
+                      {expandedRoom === room.id ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -244,53 +256,35 @@ const loadRoomEvents = useCallback(async () => {
                     <Users className="w-4 h-4 mr-2" />
                     <span>Capacity: {room.capacity} people</span>
                   </div>
-                  {room.audioDeviceName && (
-                    <div className="flex items-center text-gray-600">
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span>Equipment: {room.audioDeviceName}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center text-gray-600">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <span>
-                      {room.status === 'occupied'
-                        ? 'Currently occupied'
-                        : 'Available now'}
-                    </span>
-                  </div>
 
-                  {/* Events Dropdown */}
-                  <button
-                    onClick={() => setExpandedRoom(expandedRoom === room.id ? null : room.id)}
-                    className="flex items-center justify-between w-full mt-2 p-2 hover:bg-gray-50 rounded"
-                  >
-                    <span className="text-sm font-medium">View Schedule</span>
-                    {expandedRoom === room.id ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
-
+                  {/* Events List */}
                   {expandedRoom === room.id && roomEvents[room.id] && (
                     <div className="mt-2 space-y-2">
-                      {roomEvents[room.id].length > 0 ? (
-                        roomEvents[room.id]
-                          .sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime))
-                          .map((event, index) => (
-                            <div key={index} className="p-2 bg-gray-50 rounded text-sm">
-                              <div className="font-medium">{event.subject}</div>
-                              <div className="text-gray-600">
-                                Organizer: {event.organizer.emailAddress.name}
-                              </div>
-                              <div className="text-gray-600">
-                                {new Date(event.start.dateTime).toLocaleString()} -
-                                {new Date(event.end.dateTime).toLocaleTimeString()}
-                              </div>
+                      {roomEvents[room.id]
+                        .filter(event => {
+                          const eventDate = new Date(event.start.dateTime);
+                          const today = new Date();
+                          return eventDate.toDateString() === today.toDateString();
+                        })
+                        .sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime))
+                        .map((event, index) => (
+                          <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                            <div className="font-medium">{event.subject}</div>
+                            <div className="text-gray-600">
+                              Organizer: {event.organizer.emailAddress.name}
                             </div>
-                          ))
-                      ) : (
-                        <div className="text-gray-600 text-sm">No scheduled meetings</div>
+                            <div className="text-gray-600">
+                              {new Date(event.start.dateTime).toLocaleTimeString()} -
+                              {new Date(event.end.dateTime).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        ))}
+                      {!roomEvents[room.id].some(event => {
+                        const eventDate = new Date(event.start.dateTime);
+                        const today = new Date();
+                        return eventDate.toDateString() === today.toDateString();
+                      }) && (
+                        <div className="text-gray-600 text-sm">No meetings today</div>
                       )}
                     </div>
                   )}

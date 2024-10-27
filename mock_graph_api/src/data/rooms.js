@@ -150,9 +150,72 @@ export const rooms = [
     capacity: 12,
     tags: ["large", "conference"]
   },
-  // Floor 5
   {
     id: "room16",
+    displayName: "Room 4.01",
+    emailAddress: "room401@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 4,
+    capacity: 12,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "room17",
+    displayName: "Room 4.02",
+    emailAddress: "room402@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 4,
+    capacity: 12,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "room18",
+    displayName: "Room 4.03",
+    emailAddress: "room403@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 4,
+    capacity: 12,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "room19",
+    displayName: "Room 4.04",
+    emailAddress: "room404@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 4,
+    capacity: 12,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "room20",
+    displayName: "Room 4.05",
+    emailAddress: "room405@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 4,
+    capacity: 12,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "room21",
+    displayName: "Room 4.06",
+    emailAddress: "room406@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 4,
+    capacity: 12,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "room22",
+    displayName: "Room 4.07",
+    emailAddress: "room407@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 4,
+    capacity: 12,
+    tags: ["large", "conference"]
+  },
+  // Floor 5
+  {
+    id: "room23",
     displayName: "Room 5.01",
     emailAddress: "room501@mockgraph.local",
     building: "Bucharest",
@@ -161,7 +224,7 @@ export const rooms = [
     tags: ["small", "huddle"]
   },
   {
-    id: "room17",
+    id: "room24",
     displayName: "Room 5.02",
     emailAddress: "room502@mockgraph.local",
     building: "Amsterdam",
@@ -170,7 +233,7 @@ export const rooms = [
     tags: ["medium", "conference"]
   },
   {
-    id: "room18",
+    id: "room25",
     displayName: "Room 5.03",
     emailAddress: "room503@mockgraph.local",
     building: "Cluj",
