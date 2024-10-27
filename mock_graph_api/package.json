@@ -1,0 +1,19 @@
+{
+  "name": "mock-graph-api",
+  "version": "1.0.0",
+  "description": "Mock Microsoft Graph API for room booking",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
