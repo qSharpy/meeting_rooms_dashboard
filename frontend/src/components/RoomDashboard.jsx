@@ -2,33 +2,66 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Calendar, Users, Clock, Building, Filter } from 'lucide-react';
 import { fetchRooms, fetchRoomEvents } from '../services/roomService';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const RoomDashboard = () => {
-  const [selectedFloor, setSelectedFloor] = useState("0");
+  const [selectedBuilding, setSelectedBuilding] = useState("");
+  const [selectedFloor, setSelectedFloor] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [capacityFilter, setCapacityFilter] = useState("all");
   const [hoveredRoom, setHoveredRoom] = useState(null);
   const [rooms, setRooms] = useState({});
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [expandedRoom, setExpandedRoom] = useState(null);
+  const [roomEvents, setRoomEvents] = useState({});
 
-  // Load rooms from API and organize by floor
+  // Group rooms by building and floor
   useEffect(() => {
     const loadRooms = async () => {
       setLoading(true);
       try {
         const roomsData = await fetchRooms();
-        const roomsByFloor = roomsData.reduce((acc, room) => {
+
+        // Group rooms by building first, then by floor
+        const roomsByBuilding = roomsData.reduce((buildingAcc, room) => {
+          const building = room.building;
           const floor = room.floorNumber.toString();
-          if (!acc[floor]) acc[floor] = [];
-          acc[floor].push({
+
+          if (!buildingAcc[building]) {
+            buildingAcc[building] = {};
+          }
+
+          if (!buildingAcc[building][floor]) {
+            buildingAcc[building][floor] = [];
+          }
+
+          buildingAcc[building][floor].push({
             ...room,
-            status: 'available', // Default status
-            rect: { x: 20 + (acc[floor].length * 110), y: 20, width: 100, height: 80 }
+            status: 'available',
+            rect: {
+              x: 20 + (buildingAcc[building][floor].length * 110),
+              y: 20,
+              width: 100,
+              height: 80
+            }
           });
-          return acc;
+
+          return buildingAcc;
         }, {});
-        setRooms(roomsByFloor);
+
+        setRooms(roomsByBuilding);
+
+        // Set initial building and floor if not set
+        if (!selectedBuilding) {
+          const firstBuilding = Object.keys(roomsByBuilding)[0];
+          setSelectedBuilding(firstBuilding);
+
+          if (firstBuilding) {
+            const firstFloor = Object.keys(roomsByBuilding[firstBuilding])[0];
+            setSelectedFloor(firstFloor);
+          }
+        }
       } catch (error) {
         console.error('Error loading rooms:', error);
       }
@@ -39,38 +72,53 @@ const RoomDashboard = () => {
   }, []);
 
   // Load room events and update status
-  const loadRoomEvents = useCallback(async () => {
-    if (!rooms[selectedFloor]) return;
+const loadRoomEvents = useCallback(async () => {
+  if (!rooms[selectedBuilding]?.[selectedFloor]) return;
 
-    try {
-      for (const room of rooms[selectedFloor]) {
-        const events = await fetchRoomEvents(room.emailAddress);
-        const now = new Date();
-        const isOccupied = events.some(event => {
-          const start = new Date(event.start.dateTime);
-          const end = new Date(event.end.dateTime);
-          return now >= start && now <= end;
-        });
+  try {
+    const updatedRooms = { ...rooms };
+    const newRoomEvents = {};
 
-        setRooms(prev => ({
-          ...prev,
-          [selectedFloor]: prev[selectedFloor].map(r =>
-            r.id === room.id ? { ...r, status: isOccupied ? 'occupied' : 'available' } : r
-          )
-        }));
-      }
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error loading room events:', error);
+    for (const room of rooms[selectedBuilding][selectedFloor]) {
+      const events = await fetchRoomEvents(room.emailAddress);
+      const now = new Date();
+      const isOccupied = events.some(event => {
+        const start = new Date(event.start.dateTime);
+        const end = new Date(event.end.dateTime);
+        return now >= start && now <= end;
+      });
+
+      updatedRooms[selectedBuilding][selectedFloor] = updatedRooms[selectedBuilding][selectedFloor]
+        .map(r => r.id === room.id ? { ...r, status: isOccupied ? 'occupied' : 'available' } : r);
+
+      // Store events for this room
+      newRoomEvents[room.id] = events;
     }
-  }, [selectedFloor, rooms]);
+
+    setRooms(updatedRooms);
+    setRoomEvents(newRoomEvents);
+    setLastUpdated(new Date());
+  } catch (error) {
+    console.error('Error loading room events:', error);
+  }
+}, [selectedBuilding, selectedFloor]);
 
   // Set up polling for room events
   useEffect(() => {
-    loadRoomEvents();
-    const intervalId = setInterval(loadRoomEvents, 30000); // Poll every 30 seconds
-    return () => clearInterval(intervalId);
-  }, [loadRoomEvents]);
+    if (selectedBuilding && selectedFloor) {
+      loadRoomEvents();
+      const intervalId = setInterval(loadRoomEvents, 30000); // Poll every 30 seconds
+      return () => clearInterval(intervalId);
+    }
+  }, [selectedBuilding, selectedFloor, loadRoomEvents]);
+
+  // Handle building change
+  const handleBuildingChange = (buildingName) => {
+    setSelectedBuilding(buildingName);
+    // Reset floor selection to first floor of new building
+    const firstFloor = Object.keys(rooms[buildingName] || {})[0];
+    setSelectedFloor(firstFloor || "");
+  };
 
   const getStatusColor = (status) => {
     return status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
@@ -84,73 +132,13 @@ const RoomDashboard = () => {
     return status === 'available' ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
   };
 
-  const filteredRooms = (rooms[selectedFloor] || []).filter(room => {
+  const filteredRooms = (rooms[selectedBuilding]?.[selectedFloor] || []).filter(room => {
     if (statusFilter !== "all" && room.status !== statusFilter) return false;
     if (capacityFilter === "small" && room.capacity > 6) return false;
     if (capacityFilter === "medium" && (room.capacity <= 6 || room.capacity > 10)) return false;
     if (capacityFilter === "large" && room.capacity <= 10) return false;
     return true;
   });
-
-  const FloorMap = () => (
-    <div className="sticky top-4 bg-white rounded-lg shadow-lg p-4">
-      <svg width="100%" height="400" viewBox="0 0 250 300" className="max-w-full">
-        {/* Floor outline */}
-        <rect x="10" y="10" width="230" height="280" fill="none" stroke="#e5e5e5" strokeWidth="2"/>
-
-        {/* Room overlays */}
-        {filteredRooms.map((room) => (
-          <g
-            key={room.id}
-            onMouseEnter={() => setHoveredRoom(room)}
-            onMouseLeave={() => setHoveredRoom(null)}
-            className="cursor-pointer"
-          >
-            <rect
-              x={room.rect.x}
-              y={room.rect.y}
-              width={room.rect.width}
-              height={room.rect.height}
-              fill={getStatusFill(room.status)}
-              stroke={getStatusStroke(room.status)}
-              strokeWidth="2"
-              rx="4"
-              className="transition-all duration-200"
-              style={{
-                filter: hoveredRoom?.id === room.id ? 'brightness(0.95)' : 'none'
-              }}
-            />
-            <text
-              x={room.rect.x + room.rect.width/2}
-              y={room.rect.y + room.rect.height/2}
-              textAnchor="middle"
-              className="text-sm font-medium"
-              fill="#444"
-            >
-              {room.displayName}
-            </text>
-            <text
-              x={room.rect.x + room.rect.width/2}
-              y={room.rect.y + room.rect.height/2 + 20}
-              textAnchor="middle"
-              className="text-xs"
-              fill="#666"
-            >
-              {room.capacity} people
-            </text>
-          </g>
-        ))}
-
-        {/* Legend */}
-        <g transform="translate(20, 260)">
-          <rect width="15" height="15" fill={getStatusFill('available')} stroke={getStatusStroke('available')}/>
-          <text x="20" y="12" className="text-xs">Available</text>
-          <rect x="100" width="15" height="15" fill={getStatusFill('occupied')} stroke={getStatusStroke('occupied')}/>
-          <text x="120" y="12" className="text-xs">Occupied</text>
-        </g>
-      </svg>
-    </div>
-  );
 
   if (loading) {
     return (
@@ -167,6 +155,23 @@ const RoomDashboard = () => {
 
         {/* Controls */}
         <div className="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          {/* Building Selector */}
+          <div className="flex items-center gap-2">
+            <Building className="w-5 h-5" />
+            <select
+              className="border rounded p-2"
+              value={selectedBuilding}
+              onChange={(e) => handleBuildingChange(e.target.value)}
+            >
+              {Object.keys(rooms).map((building) => (
+                <option key={building} value={building}>
+                  {building}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Floor Selector */}
           <div className="flex items-center gap-2">
             <Building className="w-5 h-5" />
             <select
@@ -174,7 +179,7 @@ const RoomDashboard = () => {
               value={selectedFloor}
               onChange={(e) => setSelectedFloor(e.target.value)}
             >
-              {Object.keys(rooms).sort().map((floor) => (
+              {Object.keys(rooms[selectedBuilding] || {}).sort((a, b) => a - b).map((floor) => (
                 <option key={floor} value={floor}>
                   Floor {floor}
                 </option>
@@ -253,6 +258,42 @@ const RoomDashboard = () => {
                         : 'Available now'}
                     </span>
                   </div>
+
+                  {/* Events Dropdown */}
+                  <button
+                    onClick={() => setExpandedRoom(expandedRoom === room.id ? null : room.id)}
+                    className="flex items-center justify-between w-full mt-2 p-2 hover:bg-gray-50 rounded"
+                  >
+                    <span className="text-sm font-medium">View Schedule</span>
+                    {expandedRoom === room.id ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  {expandedRoom === room.id && roomEvents[room.id] && (
+                    <div className="mt-2 space-y-2">
+                      {roomEvents[room.id].length > 0 ? (
+                        roomEvents[room.id]
+                          .sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime))
+                          .map((event, index) => (
+                            <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                              <div className="font-medium">{event.subject}</div>
+                              <div className="text-gray-600">
+                                Organizer: {event.organizer.emailAddress.name}
+                              </div>
+                              <div className="text-gray-600">
+                                {new Date(event.start.dateTime).toLocaleString()} -
+                                {new Date(event.end.dateTime).toLocaleTimeString()}
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="text-gray-600 text-sm">No scheduled meetings</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -260,7 +301,63 @@ const RoomDashboard = () => {
         </div>
 
         {/* Map View */}
-        <FloorMap />
+        <div className="sticky top-4 bg-white rounded-lg shadow-lg p-4">
+          <svg width="100%" height="400" viewBox="0 0 250 300" className="max-w-full">
+            {/* Floor outline */}
+            <rect x="10" y="10" width="230" height="280" fill="none" stroke="#e5e5e5" strokeWidth="2"/>
+
+            {/* Room overlays */}
+            {filteredRooms.map((room) => (
+              <g
+                key={room.id}
+                onMouseEnter={() => setHoveredRoom(room)}
+                onMouseLeave={() => setHoveredRoom(null)}
+                className="cursor-pointer"
+              >
+                <rect
+                  x={room.rect.x}
+                  y={room.rect.y}
+                  width={room.rect.width}
+                  height={room.rect.height}
+                  fill={getStatusFill(room.status)}
+                  stroke={getStatusStroke(room.status)}
+                  strokeWidth="2"
+                  rx="4"
+                  className="transition-all duration-200"
+                  style={{
+                    filter: hoveredRoom?.id === room.id ? 'brightness(0.95)' : 'none'
+                  }}
+                />
+                <text
+                  x={room.rect.x + room.rect.width/2}
+                  y={room.rect.y + room.rect.height/2}
+                  textAnchor="middle"
+                  className="text-sm font-medium"
+                  fill="#444"
+                >
+                  {room.displayName}
+                </text>
+                <text
+                  x={room.rect.x + room.rect.width/2}
+                  y={room.rect.y + room.rect.height/2 + 20}
+                  textAnchor="middle"
+                  className="text-xs"
+                  fill="#666"
+                >
+                  {room.capacity} people
+                </text>
+              </g>
+            ))}
+
+            {/* Legend */}
+            <g transform="translate(20, 260)">
+              <rect width="15" height="15" fill={getStatusFill('available')} stroke={getStatusStroke('available')}/>
+              <text x="20" y="12" className="text-xs">Available</text>
+              <rect x="100" width="15" height="15" fill={getStatusFill('occupied')} stroke={getStatusStroke('occupied')}/>
+              <text x="120" y="12" className="text-xs">Occupied</text>
+            </g>
+          </svg>
+        </div>
       </div>
     </div>
   );

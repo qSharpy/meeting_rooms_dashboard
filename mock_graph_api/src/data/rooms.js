@@ -3,7 +3,7 @@ export const rooms = [
     id: "room1",
     displayName: "Room 0.01",
     emailAddress: "room001@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 0,
     capacity: 4,
     audioDeviceName: "Polycom",
@@ -16,7 +16,7 @@ export const rooms = [
     id: "room2",
     displayName: "Room 0.02",
     emailAddress: "room002@mockgraph.local",
-    building: "Main Building",
+    building: "Cluj",
     floorNumber: 0,
     capacity: 8,
     audioDeviceName: "Polycom",
@@ -29,7 +29,7 @@ export const rooms = [
     id: "room3",
     displayName: "Room 0.03",
     emailAddress: "room003@mockgraph.local",
-    building: "Main Building",
+    building: "Amsterdam",
     floorNumber: 0,
     capacity: 12,
     audioDeviceName: "Polycom",
@@ -43,7 +43,7 @@ export const rooms = [
     id: "room4",
     displayName: "Room 1.01",
     emailAddress: "room101@mockgraph.local",
-    building: "Main Building",
+    building: "Amsterdam",
     floorNumber: 1,
     capacity: 4,
     tags: ["small", "huddle"]
@@ -52,7 +52,7 @@ export const rooms = [
     id: "room5",
     displayName: "Room 1.02",
     emailAddress: "room102@mockgraph.local",
-    building: "Main Building",
+    building: "Cluj",
     floorNumber: 1,
     capacity: 8,
     tags: ["medium", "conference"]
@@ -61,7 +61,7 @@ export const rooms = [
     id: "room6",
     displayName: "Room 1.03",
     emailAddress: "room103@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 1,
     capacity: 12,
     tags: ["large", "conference"]
@@ -71,7 +71,7 @@ export const rooms = [
     id: "room7",
     displayName: "Room 2.01",
     emailAddress: "room201@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 2,
     capacity: 4,
     tags: ["small", "huddle"]
@@ -80,7 +80,7 @@ export const rooms = [
     id: "room8",
     displayName: "Room 2.02",
     emailAddress: "room202@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 2,
     capacity: 8,
     tags: ["medium", "conference"]
@@ -89,7 +89,7 @@ export const rooms = [
     id: "room9",
     displayName: "Room 2.03",
     emailAddress: "room203@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 2,
     capacity: 12,
     tags: ["large", "conference"]
@@ -99,7 +99,7 @@ export const rooms = [
     id: "room10",
     displayName: "Room 3.01",
     emailAddress: "room301@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 3,
     capacity: 4,
     tags: ["small", "huddle"]
@@ -108,7 +108,7 @@ export const rooms = [
     id: "room11",
     displayName: "Room 3.02",
     emailAddress: "room302@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 3,
     capacity: 8,
     tags: ["medium", "conference"]
@@ -117,7 +117,7 @@ export const rooms = [
     id: "room12",
     displayName: "Room 3.03",
     emailAddress: "room303@mockgraph.local",
-    building: "Main Building",
+    building: "Cluj",
     floorNumber: 3,
     capacity: 12,
     tags: ["large", "conference"]
@@ -127,7 +127,7 @@ export const rooms = [
     id: "room13",
     displayName: "Room 4.01",
     emailAddress: "room401@mockgraph.local",
-    building: "Main Building",
+    building: "Amsterdam",
     floorNumber: 4,
     capacity: 4,
     tags: ["small", "huddle"]
@@ -136,7 +136,7 @@ export const rooms = [
     id: "room14",
     displayName: "Room 4.02",
     emailAddress: "room402@mockgraph.local",
-    building: "Main Building",
+    building: "Cluj",
     floorNumber: 4,
     capacity: 8,
     tags: ["medium", "conference"]
@@ -145,7 +145,7 @@ export const rooms = [
     id: "room15",
     displayName: "Room 4.03",
     emailAddress: "room403@mockgraph.local",
-    building: "Main Building",
+    building: "Amsterdam",
     floorNumber: 4,
     capacity: 12,
     tags: ["large", "conference"]
@@ -155,7 +155,7 @@ export const rooms = [
     id: "room16",
     displayName: "Room 5.01",
     emailAddress: "room501@mockgraph.local",
-    building: "Main Building",
+    building: "Bucharest",
     floorNumber: 5,
     capacity: 4,
     tags: ["small", "huddle"]
@@ -164,7 +164,7 @@ export const rooms = [
     id: "room17",
     displayName: "Room 5.02",
     emailAddress: "room502@mockgraph.local",
-    building: "Main Building",
+    building: "Amsterdam",
     floorNumber: 5,
     capacity: 8,
     tags: ["medium", "conference"]
@@ -173,7 +173,7 @@ export const rooms = [
     id: "room18",
     displayName: "Room 5.03",
     emailAddress: "room503@mockgraph.local",
-    building: "Main Building",
+    building: "Cluj",
     floorNumber: 5,
     capacity: 12,
     tags: ["large", "conference"]
