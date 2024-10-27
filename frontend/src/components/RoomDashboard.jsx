@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Calendar, Users, Clock, Building, Filter } from 'lucide-react';
 import { fetchRooms, fetchRoomEvents } from '../services/roomService';
@@ -10,13 +10,14 @@ const RoomDashboard = () => {
   const [hoveredRoom, setHoveredRoom] = useState(null);
   const [rooms, setRooms] = useState({});
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
+  // Load rooms from API and organize by floor
   useEffect(() => {
     const loadRooms = async () => {
       setLoading(true);
       try {
         const roomsData = await fetchRooms();
-        // Group rooms by floor
         const roomsByFloor = roomsData.reduce((acc, room) => {
           const floor = room.floorNumber.toString();
           if (!acc[floor]) acc[floor] = [];
@@ -37,37 +38,39 @@ const RoomDashboard = () => {
     loadRooms();
   }, []);
 
-  useEffect(() => {
-    // Load room events for the selected floor
-    const loadRoomEvents = async () => {
-      if (!rooms[selectedFloor]) return;
+  // Load room events and update status
+  const loadRoomEvents = useCallback(async () => {
+    if (!rooms[selectedFloor]) return;
 
+    try {
       for (const room of rooms[selectedFloor]) {
-        try {
-          const events = await fetchRoomEvents(room.emailAddress);
-          const now = new Date();
-          // Check if room is currently occupied
-          const isOccupied = events.some(event => {
-            const start = new Date(event.start.dateTime);
-            const end = new Date(event.end.dateTime);
-            return now >= start && now <= end;
-          });
+        const events = await fetchRoomEvents(room.emailAddress);
+        const now = new Date();
+        const isOccupied = events.some(event => {
+          const start = new Date(event.start.dateTime);
+          const end = new Date(event.end.dateTime);
+          return now >= start && now <= end;
+        });
 
-          // Update room status
-          setRooms(prev => ({
-            ...prev,
-            [selectedFloor]: prev[selectedFloor].map(r =>
-              r.id === room.id ? { ...r, status: isOccupied ? 'occupied' : 'available' } : r
-            )
-          }));
-        } catch (error) {
-          console.error(`Error loading events for room ${room.emailAddress}:`, error);
-        }
+        setRooms(prev => ({
+          ...prev,
+          [selectedFloor]: prev[selectedFloor].map(r =>
+            r.id === room.id ? { ...r, status: isOccupied ? 'occupied' : 'available' } : r
+          )
+        }));
       }
-    };
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error loading room events:', error);
+    }
+  }, [selectedFloor, rooms]);
 
+  // Set up polling for room events
+  useEffect(() => {
     loadRoomEvents();
-  }, [selectedFloor, rooms[selectedFloor]]);
+    const intervalId = setInterval(loadRoomEvents, 30000); // Poll every 30 seconds
+    return () => clearInterval(intervalId);
+  }, [loadRoomEvents]);
 
   const getStatusColor = (status) => {
     return status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
@@ -150,7 +153,11 @@ const RoomDashboard = () => {
   );
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Loading rooms...</div>
+      </div>
+    );
   }
 
   return (
@@ -167,7 +174,7 @@ const RoomDashboard = () => {
               value={selectedFloor}
               onChange={(e) => setSelectedFloor(e.target.value)}
             >
-              {Object.keys(rooms).map((floor) => (
+              {Object.keys(rooms).sort().map((floor) => (
                 <option key={floor} value={floor}>
                   Floor {floor}
                 </option>
@@ -203,7 +210,7 @@ const RoomDashboard = () => {
           </div>
 
           <div className="ml-auto text-gray-600">
-            Last updated: {new Date().toLocaleTimeString()}
+            Last updated: {lastUpdated.toLocaleTimeString()}
           </div>
         </div>
       </div>
