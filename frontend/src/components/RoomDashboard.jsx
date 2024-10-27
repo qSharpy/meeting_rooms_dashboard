@@ -222,7 +222,7 @@ const loadRoomEvents = useCallback(async () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {/* List View */}
-        <div className="space-y-4">
+        <div className="space-y-2"> {/* Changed from space-y-4 */}
           {filteredRooms.map((room) => (
             <Card
               key={room.id}
@@ -230,9 +230,15 @@ const loadRoomEvents = useCallback(async () => {
               onMouseEnter={() => setHoveredRoom(room)}
               onMouseLeave={() => setHoveredRoom(null)}
             >
-              <CardHeader className="pb-2">
+              <CardHeader className="py-3 px-4"> {/* Changed from pb-2, added custom padding */}
                 <CardTitle className="flex items-center justify-between">
-                  <span>{room.displayName}</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-base font-medium">{room.displayName}</span> {/* Adjusted size */}
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Users className="w-4 h-4 mr-2" />
+                      <span>{room.capacity} people</span>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(room.status)}`}>
                       {room.status}
@@ -250,46 +256,40 @@ const loadRoomEvents = useCallback(async () => {
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center text-gray-600">
-                    <Users className="w-4 h-4 mr-2" />
-                    <span>Capacity: {room.capacity} people</span>
-                  </div>
 
-                  {/* Events List */}
-                  {expandedRoom === room.id && roomEvents[room.id] && (
-                    <div className="mt-2 space-y-2">
-                      {roomEvents[room.id]
-                        .filter(event => {
-                          const eventDate = new Date(event.start.dateTime);
-                          const today = new Date();
-                          return eventDate.toDateString() === today.toDateString();
-                        })
-                        .sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime))
-                        .map((event, index) => (
-                          <div key={index} className="p-2 bg-gray-50 rounded text-sm">
-                            <div className="font-medium">{event.subject}</div>
-                            <div className="text-gray-600">
-                              Organizer: {event.organizer.emailAddress.name}
-                            </div>
-                            <div className="text-gray-600">
-                              {new Date(event.start.dateTime).toLocaleTimeString()} -
-                              {new Date(event.end.dateTime).toLocaleTimeString()}
-                            </div>
-                          </div>
-                        ))}
-                      {!roomEvents[room.id].some(event => {
+              {/* Only render CardContent if room is expanded */}
+              {expandedRoom === room.id && (
+                <CardContent className="py-2 px-4"> {/* Reduced padding */}
+                  <div className="space-y-2">
+                    {roomEvents[room.id]
+                      ?.filter(event => {
                         const eventDate = new Date(event.start.dateTime);
                         const today = new Date();
                         return eventDate.toDateString() === today.toDateString();
-                      }) && (
-                        <div className="text-gray-600 text-sm">No meetings today</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
+                      })
+                      .sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime))
+                      .map((event, index) => (
+                        <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                          <div className="font-medium">{event.subject}</div>
+                          <div className="text-gray-600">
+                            Organizer: {event.organizer.emailAddress.name}
+                          </div>
+                          <div className="text-gray-600">
+                            {new Date(event.start.dateTime).toLocaleTimeString()} -
+                            {new Date(event.end.dateTime).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      ))}
+                    {(!roomEvents[room.id] || !roomEvents[room.id].some(event => {
+                      const eventDate = new Date(event.start.dateTime);
+                      const today = new Date();
+                      return eventDate.toDateString() === today.toDateString();
+                    })) && (
+                      <div className="text-gray-600 text-sm">No meetings today</div>
+                    )}
+                  </div>
+                </CardContent>
+              )}
             </Card>
           ))}
         </div>
