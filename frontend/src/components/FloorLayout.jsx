@@ -1,7 +1,28 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { buildingLayouts } from '../config/floorLayouts';
 
 const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selectedFloor }) => {
+  const containerRef = useRef(null);
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        setContainerDimensions({ width, height });
+      }
+    };
+
+    // Initial measurement
+    updateDimensions();
+
+    // Add resize listener
+    window.addEventListener('resize', updateDimensions);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+
   const getStatusFill = (status) => {
     return status === 'available' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
   };
@@ -11,15 +32,15 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
   };
 
   return (
-    <div className="relative w-full bg-white rounded-lg shadow-lg">
+    <div ref={containerRef} className="relative w-full h-full bg-white rounded-lg">
       <svg
         width="100%"
-        height="400"
-        viewBox="0 0 840 600"
-        className="max-w-full"
-        style={{ backgroundColor: '#fff' }}
+        height="100%"
+        viewBox={`0 0 840 600`}
+        preserveAspectRatio="xMidYMid meet"
+        className="max-w-full h-full"
       >
-        {/* Blueprint background */}
+        {/* Background image with proper scaling */}
         <image
           href="/blueprint.png"
           width="840"
@@ -33,7 +54,6 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
           const layout = buildingLayouts[selectedBuilding]?.[selectedFloor]?.rooms[room.id];
           if (!layout) return null;
 
-          // Calculate center points
           const centerX = layout.x + layout.width / 2;
           const centerY = layout.y + layout.height / 2;
 

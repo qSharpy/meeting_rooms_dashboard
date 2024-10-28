@@ -288,7 +288,7 @@ const RoomDashboard = () => {
 
         {/* Map View - 70% */}
         <div className="col-span-8 sticky top-4">
-          <div className="bg-white rounded-lg shadow-lg p-4 h-[calc(100vh-8rem)] overflow-auto">
+          <div className="bg-white rounded-lg shadow-lg p-4" style={{ height: 'calc(100vh - 8rem)' }}>
             <FloorLayout
               rooms={filteredRooms}
               selectedRoom={hoveredRoom}
