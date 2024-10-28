@@ -24,7 +24,7 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
           href="/blueprint.png"
           width="840"
           height="600"
-          opacity="0.2"
+          opacity="0.4"
           preserveAspectRatio="xMidYMid slice"
         />
 
