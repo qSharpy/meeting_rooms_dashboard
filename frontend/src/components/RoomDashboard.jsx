@@ -74,36 +74,36 @@ const RoomDashboard = () => {
   }, []);
 
   // Load room events and update status
-const loadRoomEvents = useCallback(async () => {
-  if (!rooms[selectedBuilding]?.[selectedFloor]) return;
+  const loadRoomEvents = useCallback(async () => {
+    if (!rooms[selectedBuilding]?.[selectedFloor]) return;
 
-  try {
-    const updatedRooms = { ...rooms };
-    const newRoomEvents = {};
+    try {
+      const updatedRooms = { ...rooms };
+      const newRoomEvents = {};
 
-    for (const room of rooms[selectedBuilding][selectedFloor]) {
-      const events = await fetchRoomEvents(room.emailAddress);
-      const now = new Date();
-      const isOccupied = events.some(event => {
-        const start = new Date(event.start.dateTime);
-        const end = new Date(event.end.dateTime);
-        return now >= start && now <= end;
-      });
+      for (const room of rooms[selectedBuilding][selectedFloor]) {
+        const events = await fetchRoomEvents(room.emailAddress);
+        const now = new Date();
+        const isOccupied = events.some(event => {
+          const start = new Date(event.start.dateTime);
+          const end = new Date(event.end.dateTime);
+          return now >= start && now <= end;
+        });
 
-      updatedRooms[selectedBuilding][selectedFloor] = updatedRooms[selectedBuilding][selectedFloor]
-        .map(r => r.id === room.id ? { ...r, status: isOccupied ? 'occupied' : 'available' } : r);
+        updatedRooms[selectedBuilding][selectedFloor] = updatedRooms[selectedBuilding][selectedFloor]
+          .map(r => r.id === room.id ? { ...r, status: isOccupied ? 'occupied' : 'available' } : r);
 
-      // Store events for this room
-      newRoomEvents[room.id] = events;
+        // Store events for this room
+        newRoomEvents[room.id] = events;
+      }
+
+      setRooms(updatedRooms);
+      setRoomEvents(newRoomEvents);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error loading room events:', error);
     }
-
-    setRooms(updatedRooms);
-    setRoomEvents(newRoomEvents);
-    setLastUpdated(new Date());
-  } catch (error) {
-    console.error('Error loading room events:', error);
-  }
-}, [selectedBuilding, selectedFloor]);
+  }, [selectedBuilding, selectedFloor]);
 
   // Set up polling for room events
   useEffect(() => {
@@ -124,14 +124,6 @@ const loadRoomEvents = useCallback(async () => {
 
   const getStatusColor = (status) => {
     return status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-  };
-
-  const getStatusFill = (status) => {
-    return status === 'available' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
-  };
-
-  const getStatusStroke = (status) => {
-    return status === 'available' ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
   };
 
   const filteredRooms = (rooms[selectedBuilding]?.[selectedFloor] || []).filter(room => {
@@ -155,7 +147,6 @@ const loadRoomEvents = useCallback(async () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-4">Meeting Room Status</h1>
 
-        {/* Controls */}
         <div className="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
           {/* Building Selector */}
           <div className="flex items-center gap-2">
@@ -222,9 +213,9 @@ const loadRoomEvents = useCallback(async () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {/* List View */}
-        <div className="space-y-2"> {/* Changed from space-y-4 */}
+      <div className="grid grid-cols-12 gap-6 items-start">
+        {/* List View - 30% */}
+        <div className="col-span-4 space-y-2">
           {filteredRooms.map((room) => (
             <Card
               key={room.id}
@@ -232,10 +223,10 @@ const loadRoomEvents = useCallback(async () => {
               onMouseEnter={() => setHoveredRoom(room)}
               onMouseLeave={() => setHoveredRoom(null)}
             >
-              <CardHeader className="py-3 px-4"> {/* Changed from pb-2, added custom padding */}
+              <CardHeader className="py-3 px-4">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <span className="text-base font-medium">{room.displayName}</span> {/* Adjusted size */}
+                    <span className="text-base font-medium">{room.displayName}</span>
                     <div className="flex items-center text-gray-600 text-sm">
                       <Users className="w-4 h-4 mr-2" />
                       <span>{room.capacity} people</span>
@@ -259,9 +250,8 @@ const loadRoomEvents = useCallback(async () => {
                 </CardTitle>
               </CardHeader>
 
-              {/* Only render CardContent if room is expanded */}
               {expandedRoom === room.id && (
-                <CardContent className="py-2 px-4"> {/* Reduced padding */}
+                <CardContent className="py-2 px-4">
                   <div className="space-y-2">
                     {roomEvents[room.id]
                       ?.filter(event => {
@@ -295,15 +285,18 @@ const loadRoomEvents = useCallback(async () => {
             </Card>
           ))}
         </div>
-        {/* Map View */}
-        <div className="sticky top-4 bg-white rounded-lg shadow-lg p-4">
-          <FloorLayout
-            rooms={filteredRooms}
-            selectedRoom={hoveredRoom}
-            onRoomClick={(room) => setExpandedRoom(room.id)}
-            selectedBuilding={selectedBuilding}
-            selectedFloor={selectedFloor}
-          />
+
+        {/* Map View - 70% */}
+        <div className="col-span-8 sticky top-4">
+          <div className="bg-white rounded-lg shadow-lg p-4 h-[calc(100vh-8rem)] overflow-auto">
+            <FloorLayout
+              rooms={filteredRooms}
+              selectedRoom={hoveredRoom}
+              onRoomClick={(room) => setExpandedRoom(room.id)}
+              selectedBuilding={selectedBuilding}
+              selectedFloor={selectedFloor}
+            />
+          </div>
         </div>
       </div>
     </div>
