@@ -3,24 +3,17 @@ import { buildingLayouts } from '../config/floorLayouts';
 
 const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selectedFloor }) => {
   const containerRef = useRef(null);
-  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+  const [imageDimensions, setImageDimensions] = useState({ width: 840, height: 600 });
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        setContainerDimensions({ width, height });
-      }
+    // Create an image element to load and measure the background image
+    const img = new Image();
+    img.src = '/blueprint.png';
+    img.onload = () => {
+      setImageDimensions({ width: img.width, height: img.height });
+      setIsImageLoaded(true);
     };
-
-    // Initial measurement
-    updateDimensions();
-
-    // Add resize listener
-    window.addEventListener('resize', updateDimensions);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
   const getStatusFill = (status) => {
@@ -31,31 +24,42 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
     return status === 'available' ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
   };
 
+  // Scale factor to adjust room positions and sizes based on image dimensions
+  const scaleX = imageDimensions.width / 840;
+  const scaleY = imageDimensions.height / 600;
+
+  const scaleValue = (value, scale) => value * scale;
+
   return (
     <div ref={containerRef} className="relative w-full h-full bg-white rounded-lg">
       <svg
         width="100%"
         height="100%"
-        viewBox={`0 0 840 600`}
+        viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
         preserveAspectRatio="xMidYMid meet"
         className="max-w-full h-full"
       >
         {/* Background image with proper scaling */}
         <image
           href="/blueprint.png"
-          width="840"
-          height="600"
+          width={imageDimensions.width}
+          height={imageDimensions.height}
           opacity="0.4"
           preserveAspectRatio="xMidYMid slice"
         />
 
         {/* Room overlays */}
-        {rooms.map((room) => {
+        {isImageLoaded && rooms.map((room) => {
           const layout = buildingLayouts[selectedBuilding]?.[selectedFloor]?.rooms[room.id];
           if (!layout) return null;
 
-          const centerX = layout.x + layout.width / 2;
-          const centerY = layout.y + layout.height / 2;
+          // Scale the room positions and dimensions
+          const scaledX = scaleValue(layout.x, scaleX);
+          const scaledY = scaleValue(layout.y, scaleY);
+          const scaledWidth = scaleValue(layout.width, scaleX);
+          const scaledHeight = scaleValue(layout.height, scaleY);
+          const scaledCenterX = scaledX + scaledWidth / 2;
+          const scaledCenterY = scaledY + scaledHeight / 2;
 
           return (
             <g
@@ -64,37 +68,39 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
               className="cursor-pointer"
             >
               <rect
-                x={layout.x}
-                y={layout.y}
-                width={layout.width}
-                height={layout.height}
+                x={scaledX}
+                y={scaledY}
+                width={scaledWidth}
+                height={scaledHeight}
                 fill={getStatusFill(room.status)}
                 stroke={getStatusStroke(room.status)}
-                strokeWidth="2"
-                rx="4"
+                strokeWidth={scaleValue(2, scaleX)}
+                rx={scaleValue(4, scaleX)}
                 className={`transition-all duration-200 ${
                   selectedRoom?.id === room.id ? 'filter brightness-95' : ''
                 }`}
               />
               {/* Room number */}
               <text
-                x={centerX}
-                y={centerY - 10}
+                x={scaledCenterX}
+                y={scaledCenterY - scaleValue(10, scaleY)}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="text-sm font-medium"
                 fill="#444"
+                style={{ fontSize: `${scaleValue(14, scaleY)}px` }}
               >
                 {room.displayName}
               </text>
               {/* Capacity */}
               <text
-                x={centerX}
-                y={centerY + 10}
+                x={scaledCenterX}
+                y={scaledCenterY + scaleValue(10, scaleY)}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="text-xs"
                 fill="#666"
+                style={{ fontSize: `${scaleValue(12, scaleY)}px` }}
               >
                 {room.capacity} people
               </text>
@@ -103,12 +109,39 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
         })}
 
         {/* Legend */}
-        <g transform="translate(20, 520)">
-          <rect width="15" height="15" fill={getStatusFill('available')} stroke={getStatusStroke('available')}/>
-          <text x="20" y="12" className="text-xs">Available</text>
-          <rect x="100" width="15" height="15" fill={getStatusFill('occupied')} stroke={getStatusStroke('occupied')}/>
-          <text x="120" y="12" className="text-xs">Occupied</text>
-        </g>
+        {isImageLoaded && (
+          <g transform={`translate(${scaleValue(20, scaleX)}, ${scaleValue(520, scaleY)})`}>
+            <rect
+              width={scaleValue(15, scaleX)}
+              height={scaleValue(15, scaleY)}
+              fill={getStatusFill('available')}
+              stroke={getStatusStroke('available')}
+            />
+            <text
+              x={scaleValue(20, scaleX)}
+              y={scaleValue(12, scaleY)}
+              className="text-xs"
+              style={{ fontSize: `${scaleValue(12, scaleY)}px` }}
+            >
+              Available
+            </text>
+            <rect
+              x={scaleValue(100, scaleX)}
+              width={scaleValue(15, scaleX)}
+              height={scaleValue(15, scaleY)}
+              fill={getStatusFill('occupied')}
+              stroke={getStatusStroke('occupied')}
+            />
+            <text
+              x={scaleValue(120, scaleX)}
+              y={scaleValue(12, scaleY)}
+              className="text-xs"
+              style={{ fontSize: `${scaleValue(12, scaleY)}px` }}
+            >
+              Occupied
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   );
