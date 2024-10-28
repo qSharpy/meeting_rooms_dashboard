@@ -7,14 +7,30 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   useEffect(() => {
+    // Reset state when building/floor changes
+    setIsImageLoaded(false);
+
     // Create an image element to load and measure the background image
     const img = new Image();
-    img.src = '/blueprint.png';
+    const floorPlanImage = `/floorplans/${selectedBuilding.toLowerCase()}_floor${selectedFloor}.png`;
+    img.src = floorPlanImage;
+
     img.onload = () => {
       setImageDimensions({ width: img.width, height: img.height });
       setIsImageLoaded(true);
     };
-  }, []);
+
+    img.onerror = () => {
+      // Fallback to default blueprint if specific floor plan isn't found
+      console.warn(`Floor plan ${floorPlanImage} not found, using default blueprint`);
+      const defaultImg = new Image();
+      defaultImg.src = '/blueprint.png';
+      defaultImg.onload = () => {
+        setImageDimensions({ width: defaultImg.width, height: defaultImg.height });
+        setIsImageLoaded(true);
+      };
+    };
+  }, [selectedBuilding, selectedFloor]);
 
   const getStatusFill = (status) => {
     return status === 'available' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
@@ -41,11 +57,15 @@ const FloorLayout = ({ rooms, selectedRoom, onRoomClick, selectedBuilding, selec
       >
         {/* Background image with proper scaling */}
         <image
-          href="/blueprint.png"
+          href={`/floorplans/${selectedBuilding.toLowerCase()}_floor${selectedFloor}.png`}
           width={imageDimensions.width}
           height={imageDimensions.height}
           opacity="0.4"
           preserveAspectRatio="xMidYMid slice"
+          onError={(e) => {
+            // Fallback to default blueprint if specific floor plan fails to load
+            e.target.setAttribute('href', '/blueprint.png');
+          }}
         />
 
         {/* Room overlays */}
