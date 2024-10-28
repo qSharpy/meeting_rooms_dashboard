@@ -1,7 +1,7 @@
 export const rooms = [
   {
-    id: "room1",
-    displayName: "Room 0.01",
+    id: "0.01",
+    displayName: "0.01",
     emailAddress: "room001@mockgraph.local",
     building: "Bucharest",
     floorNumber: 0,
@@ -13,10 +13,10 @@ export const rooms = [
     tags: ["small", "huddle"]
   },
   {
-    id: "room2",
-    displayName: "Room 0.02",
+    id: "0.02",
+    displayName: "0.02",
     emailAddress: "room002@mockgraph.local",
-    building: "Cluj",
+    building: "Bucharest",
     floorNumber: 0,
     capacity: 8,
     audioDeviceName: "Polycom",
@@ -26,10 +26,10 @@ export const rooms = [
     tags: ["medium", "conference"]
   },
   {
-    id: "room3",
-    displayName: "Room 0.03",
+    id: "0.03",
+    displayName: "0.03",
     emailAddress: "room003@mockgraph.local",
-    building: "Amsterdam",
+    building: "Bucharest",
     floorNumber: 0,
     capacity: 12,
     audioDeviceName: "Polycom",
@@ -38,225 +38,121 @@ export const rooms = [
     isWheelChairAccessible: true,
     tags: ["large", "conference"]
   },
-  // Floor 1
   {
-    id: "room4",
-    displayName: "Room 1.01",
+    id: "0.04",
+    displayName: "0.04",
+    emailAddress: "room004@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 0,
+    capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "0.05",
+    displayName: "0.05",
+    emailAddress: "room005@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 0,
+    capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "0.06",
+    displayName: "0.06",
+    emailAddress: "room006@mockgraph.local",
+    building: "Bucharest",
+    floorNumber: 0,
+    capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
+    tags: ["large", "conference"]
+  },
+  {
+    id: "1.01",
+    displayName: "1.01",
     emailAddress: "room101@mockgraph.local",
-    building: "Amsterdam",
+    building: "Bucharest",
     floorNumber: 1,
-    capacity: 4,
-    tags: ["small", "huddle"]
+    capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
+    tags: ["large", "conference"]
   },
   {
-    id: "room5",
-    displayName: "Room 1.02",
+    id: "1.02",
+    displayName: "1.02",
     emailAddress: "room102@mockgraph.local",
-    building: "Cluj",
+    building: "Bucharest",
     floorNumber: 1,
-    capacity: 8,
-    tags: ["medium", "conference"]
+    capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
+    tags: ["large", "conference"]
   },
   {
-    id: "room6",
-    displayName: "Room 1.03",
+    id: "1.03",
+    displayName: "1.03",
     emailAddress: "room103@mockgraph.local",
     building: "Bucharest",
     floorNumber: 1,
     capacity: 12,
-    tags: ["large", "conference"]
-  },
-  // Floor 2
-  {
-    id: "room7",
-    displayName: "Room 2.01",
-    emailAddress: "room201@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 2,
-    capacity: 4,
-    tags: ["small", "huddle"]
-  },
-  {
-    id: "room8",
-    displayName: "Room 2.02",
-    emailAddress: "room202@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 2,
-    capacity: 8,
-    tags: ["medium", "conference"]
-  },
-  {
-    id: "room9",
-    displayName: "Room 2.03",
-    emailAddress: "room203@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 2,
-    capacity: 12,
-    tags: ["large", "conference"]
-  },
-  // Floor 3
-  {
-    id: "room10",
-    displayName: "Room 3.01",
-    emailAddress: "room301@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 3,
-    capacity: 4,
-    tags: ["small", "huddle"]
-  },
-  {
-    id: "room11",
-    displayName: "Room 3.02",
-    emailAddress: "room302@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 3,
-    capacity: 8,
-    tags: ["medium", "conference"]
-  },
-  {
-    id: "room12",
-    displayName: "Room 3.03",
-    emailAddress: "room303@mockgraph.local",
-    building: "Cluj",
-    floorNumber: 3,
-    capacity: 12,
-    tags: ["large", "conference"]
-  },
-  // Floor 4
-  {
-    id: "room13",
-    displayName: "Room 4.01",
-    emailAddress: "room401@mockgraph.local",
-    building: "Amsterdam",
-    floorNumber: 4,
-    capacity: 4,
-    tags: ["small", "huddle"]
-  },
-  {
-    id: "room14",
-    displayName: "Room 4.02",
-    emailAddress: "room402@mockgraph.local",
-    building: "Cluj",
-    floorNumber: 4,
-    capacity: 8,
-    tags: ["medium", "conference"]
-  },
-  {
-    id: "room15",
-    displayName: "Room 4.03",
-    emailAddress: "room403@mockgraph.local",
-    building: "Amsterdam",
-    floorNumber: 4,
-    capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
     tags: ["large", "conference"]
   },
   {
-    id: "room16",
-    displayName: "Room 4.01",
-    emailAddress: "room401@mockgraph.local",
+    id: "1.04",
+    displayName: "1.04",
+    emailAddress: "room104@mockgraph.local",
     building: "Bucharest",
-    floorNumber: 4,
+    floorNumber: 1,
     capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
     tags: ["large", "conference"]
   },
   {
-    id: "room17",
-    displayName: "Room 4.02",
-    emailAddress: "room402@mockgraph.local",
+    id: "1.05",
+    displayName: "1.05",
+    emailAddress: "room105@mockgraph.local",
     building: "Bucharest",
-    floorNumber: 4,
+    floorNumber: 1,
     capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
     tags: ["large", "conference"]
   },
   {
-    id: "room18",
-    displayName: "Room 4.03",
-    emailAddress: "room403@mockgraph.local",
+    id: "1.06",
+    displayName: "1.06",
+    emailAddress: "room106@mockgraph.local",
     building: "Bucharest",
-    floorNumber: 4,
-    capacity: 8,
-    tags: ["medium", "conference"]
-  },
-  {
-    id: "room19",
-    displayName: "Room 4.04",
-    emailAddress: "room404@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 4,
-    capacity: 4,
-    tags: ["small", "huddle"]
-  },
-  {
-    id: "room20",
-    displayName: "Room 4.05",
-    emailAddress: "room405@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 4,
+    floorNumber: 1,
     capacity: 12,
-    tags: ["large", "conference"]
-  },
-  {
-    id: "room21",
-    displayName: "Room 4.06",
-    emailAddress: "room406@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 4,
-    capacity: 12,
-    tags: ["large", "conference"]
-  },
-  {
-    id: "room22",
-    displayName: "Room 4.07",
-    emailAddress: "room407@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 4,
-    capacity: 12,
-    tags: ["large", "conference"]
-  },
-  {
-    id: "room23",
-    displayName: "Room 4.08",
-    emailAddress: "room408@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 4,
-    capacity: 12,
-    tags: ["large", "conference"]
-  },
-  {
-    id: "room24",
-    displayName: "Room 4.09",
-    emailAddress: "room409@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 4,
-    capacity: 4,
-    tags: ["small", "huddle"]
-  },
-  // Floor 5
-  {
-    id: "room25",
-    displayName: "Room 5.01",
-    emailAddress: "room501@mockgraph.local",
-    building: "Bucharest",
-    floorNumber: 5,
-    capacity: 4,
-    tags: ["small", "huddle"]
-  },
-  {
-    id: "room26",
-    displayName: "Room 5.02",
-    emailAddress: "room502@mockgraph.local",
-    building: "Amsterdam",
-    floorNumber: 5,
-    capacity: 8,
-    tags: ["medium", "conference"]
-  },
-  {
-    id: "room27",
-    displayName: "Room 5.03",
-    emailAddress: "room503@mockgraph.local",
-    building: "Cluj",
-    floorNumber: 5,
-    capacity: 12,
+    audioDeviceName: "Polycom",
+    videoDeviceName: "Surface Hub",
+    displayDeviceName: "Samsung 75\"",
+    isWheelChairAccessible: true,
     tags: ["large", "conference"]
   }
 ];

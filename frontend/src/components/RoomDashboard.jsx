@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Calendar, Users, Clock, Building, Filter } from 'lucide-react';
 import { fetchRooms, fetchRoomEvents } from '../services/roomService';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { buildingLayouts } from '../config/floorLayouts';  // Add this import
 
 const RoomDashboard = () => {
   const [selectedBuilding, setSelectedBuilding] = useState("");
@@ -293,64 +294,87 @@ const loadRoomEvents = useCallback(async () => {
             </Card>
           ))}
         </div>
-
         {/* Map View */}
         <div className="sticky top-4 bg-white rounded-lg shadow-lg p-4">
-          <svg width="100%" height="400" viewBox="0 0 250 300" className="max-w-full">
-            {/* Floor outline */}
-            <rect x="10" y="10" width="230" height="280" fill="none" stroke="#e5e5e5" strokeWidth="2"/>
-
-            {/* Room overlays */}
-            {filteredRooms.map((room) => (
-              <g
-                key={room.id}
-                onMouseEnter={() => setHoveredRoom(room)}
-                onMouseLeave={() => setHoveredRoom(null)}
-                className="cursor-pointer"
-              >
-                <rect
-                  x={room.rect.x}
-                  y={room.rect.y}
-                  width={room.rect.width}
-                  height={room.rect.height}
-                  fill={getStatusFill(room.status)}
-                  stroke={getStatusStroke(room.status)}
-                  strokeWidth="2"
-                  rx="4"
-                  className="transition-all duration-200"
-                  style={{
-                    filter: hoveredRoom?.id === room.id ? 'brightness(0.95)' : 'none'
-                  }}
-                />
-                <text
-                  x={room.rect.x + room.rect.width/2}
-                  y={room.rect.y + room.rect.height/2}
-                  textAnchor="middle"
-                  className="text-sm font-medium"
-                  fill="#444"
-                >
-                  {room.displayName}
-                </text>
-                <text
-                  x={room.rect.x + room.rect.width/2}
-                  y={room.rect.y + room.rect.height/2 + 20}
-                  textAnchor="middle"
-                  className="text-xs"
-                  fill="#666"
-                >
-                  {room.capacity} people
-                </text>
+          {buildingLayouts[selectedBuilding]?.[selectedFloor] ? (
+            <svg
+              width="100%"
+              height="400"
+              viewBox={buildingLayouts[selectedBuilding][selectedFloor].viewBox}
+              className="max-w-full"
+              style={{ backgroundColor: '#fff' }}
+            >
+              {/* Base layout elements */}
+              {buildingLayouts[selectedBuilding][selectedFloor].baseElements.map((element, index) => {
+                if (element.type === 'rect') {
+                  return <rect key={index} {...element} />;
+                }
+                if (element.type === 'path') {
+                  return <path key={index} {...element} />;
+                }
+                return null;
+              })}
+              {/* Room overlays */}
+              {filteredRooms.map((room) => {
+                const layoutRoom = buildingLayouts[selectedBuilding][selectedFloor].rooms[room.displayName] ||
+                                 buildingLayouts[selectedBuilding][selectedFloor].rooms[room.id] ||
+                                 buildingLayouts[selectedBuilding][selectedFloor].rooms[room.name];
+                if (!layoutRoom) return null;
+                return (
+                  <g
+                    key={room.id}
+                    onMouseEnter={() => setHoveredRoom(room)}
+                    onMouseLeave={() => setHoveredRoom(null)}
+                    className="cursor-pointer"
+                  >
+                    <rect
+                      x={layoutRoom.x}
+                      y={layoutRoom.y}
+                      width={layoutRoom.width}
+                      height={layoutRoom.height}
+                      fill={getStatusFill(room.status)}
+                      stroke={getStatusStroke(room.status)}
+                      strokeWidth="2"
+                      rx="4"
+                      className="transition-all duration-200"
+                      style={{
+                        filter: hoveredRoom?.id === room.id ? 'brightness(0.95)' : 'none'
+                      }}
+                    />
+                    <text
+                      x={layoutRoom.label.x}
+                      y={layoutRoom.label.y}
+                      textAnchor="middle"
+                      className="text-sm font-medium"
+                      fill="#444"
+                    >
+                      {room.displayName}
+                    </text>
+                    <text
+                      x={layoutRoom.label.x}
+                      y={layoutRoom.label.y + 20}
+                      textAnchor="middle"
+                      className="text-xs"
+                      fill="#666"
+                    >
+                      {room.capacity} people
+                    </text>
+                  </g>
+                );
+              })}
+              {/* Legend */}
+              <g transform="translate(20, 520)">
+                <rect width="15" height="15" fill={getStatusFill('available')} stroke={getStatusStroke('available')}/>
+                <text x="20" y="12" className="text-xs">Available</text>
+                <rect x="100" width="15" height="15" fill={getStatusFill('occupied')} stroke={getStatusStroke('occupied')}/>
+                <text x="120" y="12" className="text-xs">Occupied</text>
               </g>
-            ))}
-
-            {/* Legend */}
-            <g transform="translate(20, 260)">
-              <rect width="15" height="15" fill={getStatusFill('available')} stroke={getStatusStroke('available')}/>
-              <text x="20" y="12" className="text-xs">Available</text>
-              <rect x="100" width="15" height="15" fill={getStatusFill('occupied')} stroke={getStatusStroke('occupied')}/>
-              <text x="120" y="12" className="text-xs">Occupied</text>
-            </g>
-          </svg>
+            </svg>
+          ) : (
+            <div className="text-center text-gray-600">
+              No floor plan available for this location
+            </div>
+          )}
         </div>
       </div>
     </div>
