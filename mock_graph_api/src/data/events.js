@@ -3,7 +3,7 @@ import { rooms } from './rooms.js';
 const generateMockEvents = () => {
   const events = {};
   const now = new Date();
-  const businessHours = { start: 9, end: 18 }; // 9 AM to 6 PM
+  const businessHours = { start: 9, end: 23 };
 
   rooms.forEach(room => {
     events[room.emailAddress] = [];
@@ -18,7 +18,7 @@ const generateMockEvents = () => {
 //        continue;
 //      }
 
-      const numEvents = Math.floor(Math.random() * 2) + 1; // 1-2 events per day
+      const numEvents = Math.floor(Math.random() * 2) + 2; // 2-3 events per day
 
       for (let j = 0; j < numEvents; j++) {
         // 40% chance for a room to have a current meeting during business hours
