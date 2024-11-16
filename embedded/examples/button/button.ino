@@ -15,7 +15,7 @@
 const char* WIFI_SSID = "TP-Link_2014";
 const char* WIFI_PASSWORD = "08493460";
 const char* API_BASE_URL = "http://192.168.0.140:3001/v1.0";
-const char* ROOM_ID = "0.04";
+const char* ROOM_ID = "0.05";
 
 // Update interval (30 seconds)
 const unsigned long UPDATE_INTERVAL = 30000;
@@ -150,12 +150,13 @@ void drawTimeline() {
 void drawRoomDisplay() {
     if (!framebuffer) return;
 
-    // Clear the display
+    // Clear the entire display first
     memset(framebuffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
     
     // Draw room number (large, top-left)
     int cursor_x = 50;
     int cursor_y = 80;
+    clearArea(40, cursor_y - 60, 200, 80);  // Clear area before drawing
     drawText(currentRoom.id.c_str(), cursor_x, cursor_y);
     
     // Draw capacity number (top-right)
@@ -163,11 +164,13 @@ void drawRoomDisplay() {
     snprintf(capacityText, sizeof(capacityText), "%d", currentRoom.capacity);
     cursor_x = cursor_x + 100;
     cursor_y = 80;
+    clearArea(cursor_x - 10, cursor_y - 60, 100, 80);  // Clear area before drawing
     drawText(capacityText, cursor_x, cursor_y);
     
     // Draw status box (top-right)
     const char* statusText = currentRoom.occupied ? "OCCUPIED" : "AVAILABLE";
     int status_x = EPD_WIDTH - 200;
+    clearArea(status_x - 10, 10, 200, 70);  // Clear area before drawing
     drawFilledRect(status_x, 20, 180, 50, currentRoom.occupied ? 0x00 : 0x0F);
     
     // Draw status text
@@ -190,9 +193,12 @@ void drawRoomDisplay() {
     } else {
         drawText(statusText, cursor_x, cursor_y);
     }
+
+    // Clear meeting areas
+    clearArea(40, 110, EPD_WIDTH - 80, 300);
     
     // Draw current meeting box
-    if (currentRoom.occupied) {
+    if (currentRoom.occupied && currentRoom.currentMeeting.name.length() > 0) {
         char timeRange[50];
         snprintf(timeRange, sizeof(timeRange), "%s -%s", 
                 currentRoom.currentMeeting.startTime.c_str(),
@@ -215,10 +221,14 @@ void drawRoomDisplay() {
                       450, 120, false);
     }
     
+    // Clear timeline area
+    clearArea(40, EPD_HEIGHT - 120, EPD_WIDTH - 80, 100);
+    
     // Draw timeline
     drawTimeline();
     
-    // Draw last updated text
+    // Clear and draw last updated text
+    clearArea(40, EPD_HEIGHT - 40, 300, 30);
     cursor_x = 50;
     cursor_y = EPD_HEIGHT - 20;
     drawText(currentRoom.lastUpdated.c_str(), cursor_x, cursor_y);
@@ -227,65 +237,101 @@ void drawRoomDisplay() {
     epd_draw_grayscale_image(epd_full_screen(), framebuffer);
 }
 
-
+void clearArea(int x, int y, int w, int h) {
+    // Helper function to properly clear an area before drawing
+    epd_fill_rect(x, y, w, h, 0xFF, framebuffer);  // Fill with white
+}
 
 bool fetchRoomData() {
-    if (WiFi.status() != WL_CONNECTED) return false;
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("WiFi not connected!");
+        return false;
+    }
 
     HTTPClient http;
     
-    // Fetch room events
-    String url = String(API_BASE_URL) + "/users/room" + ROOM_ID + "@mockgraph.local/calendar/events";
-    http.begin(url);
+    // Use the correct display endpoint
+    String url = String(API_BASE_URL) + "/displays/" + ROOM_ID;
+    Serial.println("Fetching room data from: " + url);
     
+    http.begin(url);
     int httpCode = http.GET();
+    
     if (httpCode != HTTP_CODE_OK) {
+        Serial.println("Data fetch failed with code: " + String(httpCode));
         http.end();
         return false;
     }
 
     String payload = http.getString();
+    Serial.println("Response: " + payload);
     http.end();
 
     // Parse JSON response
     DynamicJsonDocument doc(2048);
     DeserializationError error = deserializeJson(doc, payload);
-    if (error) return false;
+    if (error) {
+        Serial.println("JSON parsing failed!");
+        return false;
+    }
 
-    // Update room data
-    currentRoom.id = ROOM_ID;
-    currentRoom.capacity = 4; // This should come from room details API
-    currentRoom.occupied = false;
+    // Clear current room data
+    currentRoom.id = doc["room"]["id"].as<String>();
+    currentRoom.capacity = doc["room"]["capacity"] | 4;  // Default to 4 if not found
+    currentRoom.occupied = doc["status"]["current"] == "occupied";
     
-    // Get current time for last updated
-    time_t now = time(nullptr);
+    // Parse last updated time
+    String lastUpdatedISO = doc["status"]["lastUpdated"];
+    time_t lastUpdated = getTimestamp(lastUpdatedISO);
     char buffer[30];
-    strftime(buffer, sizeof(buffer), "Last updated: %I:%M %p", localtime(&now));
-    currentRoom.lastUpdated = String(buffer);
-
-    // Find current and next meetings
-    JsonArray events = doc["value"];
+    strftime(buffer, sizeof(buffer), "%I:%M %p", localtime(&lastUpdated));
+    currentRoom.lastUpdated = String("Last updated: ") + buffer;
     
-    bool foundNext = false;
+    Serial.println("Room ID: " + currentRoom.id);
+    Serial.println("Capacity: " + String(currentRoom.capacity));
+    Serial.println("Occupied: " + String(currentRoom.occupied));
+    Serial.println(currentRoom.lastUpdated);
+
+    // Clear meeting data
+    currentRoom.currentMeeting = {"", "", ""};
+    currentRoom.nextMeeting = {"", "", ""};
+
+    // Get current time to determine current/next meetings
+    time_t now = time(nullptr);
+    
+    // Process all events
+    JsonArray events = doc["schedule"]["events"];
+    Serial.println("Number of events: " + String(events.size()));
+    
     for (JsonObject event : events) {
-        String startTime = event["start"]["dateTime"];
-        String endTime = event["end"]["dateTime"];
+        String startTime = event["start"];
+        String endTime = event["end"];
+        String subject = event["subject"].as<String>();
+        
+        Serial.println("Processing event: " + subject);
+        Serial.println("Start: " + startTime + ", End: " + endTime);
+        
+        time_t start = getTimestamp(startTime);
+        time_t end = getTimestamp(endTime);
         
         // Check if this is current meeting
-        if (now >= getTimestamp(startTime) && now <= getTimestamp(endTime)) {
-            currentRoom.occupied = true;
-            currentRoom.currentMeeting.name = event["subject"].as<String>();
+        if (now >= start && now <= end) {
+            Serial.println("Found current meeting!");
+            currentRoom.currentMeeting.name = subject;
             currentRoom.currentMeeting.startTime = formatTime(startTime);
             currentRoom.currentMeeting.endTime = formatTime(endTime);
         }
         // Check if this is next meeting
-        else if (!foundNext && now < getTimestamp(startTime)) {
-            currentRoom.nextMeeting.name = event["subject"].as<String>();
+        else if (now < start && currentRoom.nextMeeting.name.isEmpty()) {
+            Serial.println("Found next meeting!");
+            currentRoom.nextMeeting.name = subject;
             currentRoom.nextMeeting.startTime = formatTime(startTime);
             currentRoom.nextMeeting.endTime = formatTime(endTime);
-            foundNext = true;
         }
     }
+
+    // We don't need to check nextMeeting from the response since we determine it
+    // by checking future events in the events array
 
     return true;
 }
@@ -301,26 +347,32 @@ void handleButton(Button2& btn) {
 
 void setup() {
     Serial.begin(115200);
+    Serial.println("\nStarting Room Display...");
 
     // Initialize WiFi
+    Serial.println("Connecting to WiFi...");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.print("Connecting to WiFi");
+    
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
         Serial.print(".");
         attempts++;
     }
+    
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("\nWiFi connection failed!");
     } else {
         Serial.println("\nWiFi connected!");
+        Serial.println("IP address: " + WiFi.localIP().toString());
     }
 
     // Set timezone for time conversions
+    Serial.println("Configuring time...");
     configTime(0, 0, "pool.ntp.org");
 
     // Initialize display
+    Serial.println("Initializing display...");
     epd_init();
 
     // Allocate framebuffer in PSRAM
@@ -329,17 +381,23 @@ void setup() {
         Serial.println("Failed to allocate framebuffer!");
         while (1);
     }
+    Serial.println("Framebuffer allocated successfully");
     
     // Initial data fetch and display
+    Serial.println("Fetching initial room data...");
     if (fetchRoomData()) {
+        Serial.println("Room data fetched successfully");
         epd_poweron();
         epd_clear();
         drawRoomDisplay();
         epd_poweroff();
+    } else {
+        Serial.println("Failed to fetch room data!");
     }
 
     // Setup button handler
     btn1.setPressedHandler(handleButton);
+    Serial.println("Setup complete!");
 }
 
 void loop() {
