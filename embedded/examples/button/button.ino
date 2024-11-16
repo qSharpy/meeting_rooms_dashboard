@@ -17,6 +17,18 @@ const char* WIFI_PASSWORD = "08493460";
 const char* API_BASE_URL = "http://192.168.0.140:3001/v1.0";
 const char* ROOM_ID = "0.05";
 
+// Custom fonts and sizes
+#define LARGE_FONT_SIZE 48
+#define MEDIUM_FONT_SIZE 32
+#define SMALL_FONT_SIZE 24
+#define TINY_FONT_SIZE 18
+
+// Layout constants
+const int HEADER_HEIGHT = 80;
+const int MAIN_CONTENT_Y = HEADER_HEIGHT + 20;
+const int TIMELINE_Y = EPD_HEIGHT - 100;
+const int PADDING = 20;
+
 // Update interval (30 seconds)
 const unsigned long UPDATE_INTERVAL = 30000;
 unsigned long lastUpdate = 0;
@@ -80,158 +92,156 @@ void drawText(const char* text, int &x, int &y) {
     write_string((GFXfont *)&FiraSans, (char*)text, &x, &y, framebuffer);
 }
 
-void drawMeetingBox(const char* title, const char* meetingName, const char* timeRange, int x, int y, bool filled) {
-    uint8_t fillColor = filled ? 0x00 : 0xFF;
-    drawFilledRect(x, y, 380, 160, fillColor);
+void drawRoundedRect(int x, int y, int w, int h, int r, uint8_t color, uint8_t fill_color, uint8_t *buffer) {
+    // Main rectangle
+    epd_fill_rect(x, y, w, h, fill_color, buffer);
+    
+    // Outline
+    epd_draw_rect(x, y, w, h, color, buffer);
+    
+    // Corners (approximated with small rectangles for now)
+    epd_fill_rect(x, y, r, r, fill_color, buffer);
+    epd_fill_rect(x + w - r, y, r, r, fill_color, buffer);
+    epd_fill_rect(x, y + h - r, r, r, fill_color, buffer);
+    epd_fill_rect(x + w - r, y + h - r, r, r, fill_color, buffer);
+    
+    // Draw corner outlines
+    epd_draw_circle(x + r, y + r, r, color, buffer);
+    epd_draw_circle(x + w - r, y + r, r, color, buffer);
+    epd_draw_circle(x + r, y + h - r, r, color, buffer);
+    epd_draw_circle(x + w - r, y + h - r, r, color, buffer);
+}
 
-    if (!filled) {
-        int text_x = x + 20;
-        int text_y = y + 40;
-        drawText(title, text_x, text_y);
+void drawHeader(Room &room, uint8_t *framebuffer) {
+    // Room number and capacity
+    int x = PADDING;
+    int y = PADDING + 40;
+    
+    // Draw room number in large font
+    char roomText[32];
+    snprintf(roomText, sizeof(roomText), "%s", room.id.c_str());
+    write_string(&FiraSans, roomText, &x, &y, framebuffer);
+    
+    // Draw capacity icon and number
+    x += 40;
+    char capacityText[32];
+    snprintf(capacityText, sizeof(capacityText), "👥 %d", room.capacity);
+    write_string(&FiraSans, capacityText, &x, &y, framebuffer);
+    
+    // Draw status box
+    int statusWidth = 200;
+    int statusHeight = 50;
+    int statusX = EPD_WIDTH - statusWidth - PADDING;
+    int statusY = PADDING;
+    
+    drawRoundedRect(statusX, statusY, statusWidth, statusHeight, 10,
+                   0, room.occupied ? 0x00 : 0xFF, framebuffer);
+    
+    // Status text
+    const char* statusText = room.occupied ? "OCCUPIED" : "AVAILABLE";
+    x = statusX + (statusWidth - strlen(statusText) * 14) / 2;
+    y = statusY + 35;
+    write_string(&FiraSans, (char*)statusText, &x, &y, 
+                room.occupied ? NULL : framebuffer); // Inverse text when occupied
+}
+
+void drawMeetingBox(const char* title, Meeting &meeting, int x, int y, bool inverse, uint8_t *framebuffer) {
+    int width = (EPD_WIDTH - 3 * PADDING) / 2;
+    int height = 200;
+    
+    drawRoundedRect(x, y, width, height, 10, 0,
+                   inverse ? 0x00 : 0xFF, framebuffer);
+    
+    // Title
+    int textX = x + PADDING;
+    int textY = y + 40;
+    write_string(&FiraSans, (char*)title, &textX, &textY,
+                inverse ? NULL : framebuffer);
+    
+    if (meeting.name.length() > 0) {
+        // Meeting name
+        textX = x + PADDING;
+        textY += 50;
+        char* meetingName = (char*)meeting.name.c_str();
+        write_string(&FiraSans, meetingName, &textX, &textY,
+                    inverse ? NULL : framebuffer);
         
-        text_x = x + 20;
-        text_y += 50;
-        drawText(meetingName, text_x, text_y);
-        
-        text_x = x + 20;
-        text_y += 40;
-        drawText(timeRange, text_x, text_y);
+        // Time
+        textX = x + PADDING;
+        textY += 40;
+        char timeText[64];
+        snprintf(timeText, sizeof(timeText), "⏰ %s - %s",
+                meeting.startTime.c_str(), meeting.endTime.c_str());
+        write_string(&FiraSans, timeText, &textX, &textY,
+                    inverse ? NULL : framebuffer);
     } else {
-        uint8_t *tempBuffer = (uint8_t *)ps_calloc(sizeof(uint8_t), 380 * 160 / 2);
-        if (!tempBuffer) return;
-        
-        memset(tempBuffer, 0xFF, 380 * 160 / 2);
-        
-        int text_x = 20;
-        int text_y = 40;
-        write_string((GFXfont *)&FiraSans, (char*)title, &text_x, &text_y, tempBuffer);
-        
-        text_x = 20;
-        text_y += 50;
-        write_string((GFXfont *)&FiraSans, (char*)meetingName, &text_x, &text_y, tempBuffer);
-        
-        text_x = 20;
-        text_y += 40;
-        write_string((GFXfont *)&FiraSans, (char*)timeRange, &text_x, &text_y, tempBuffer);
-        
-        for (int i = 0; i < 380 * 160 / 2; i++) {
-            uint8_t value = ~tempBuffer[i];
-            framebuffer[(y * EPD_WIDTH + x) / 2 + i] = value;
-        }
-        
-        free(tempBuffer);
+        // No meeting message
+        textX = x + PADDING;
+        textY += 50;
+        const char* noMeetingText = "No meetings scheduled";
+        write_string(&FiraSans, (char*)noMeetingText, &textX, &textY,
+                    inverse ? NULL : framebuffer);
     }
 }
 
-void drawTimeline() {
-    int baseY = EPD_HEIGHT - 100;
+void drawTimeline(Room &room, uint8_t *framebuffer) {
+    // Timeline base
+    epd_draw_hline(PADDING, TIMELINE_Y, EPD_WIDTH - 2 * PADDING, 0, framebuffer);
     
-    // Draw timeline line
-    epd_draw_hline(50, baseY, EPD_WIDTH - 100, 0, framebuffer);
-    
-    // Draw time markers
+    // Hour markers
     const char* times[] = {"12 AM", "6 AM", "12 PM", "6 PM", "12 AM"};
-    int spacing = (EPD_WIDTH - 100) / 4;
+    int markerCount = 5;
+    int markerSpacing = (EPD_WIDTH - 2 * PADDING) / (markerCount - 1);
     
-    for (int i = 0; i < 5; i++) {
-        int x = 50 + (i * spacing);
+    for (int i = 0; i < markerCount; i++) {
+        int x = PADDING + (i * markerSpacing);
+        
+        // Draw marker line
+        epd_draw_vline(x, TIMELINE_Y - 5, 10, 0, framebuffer);
+        
+        // Draw time label
         int textX = x - 20;
-        int textY = baseY + 30;
-        drawText(times[i], textX, textY);
-        epd_draw_vline(x, baseY - 5, 10, 0, framebuffer);
+        int textY = TIMELINE_Y + 25;
+        write_string(&FiraSans, (char*)times[i], &textX, &textY, framebuffer);
     }
     
-    // Draw current meeting indicator
-    if (currentRoom.occupied) {
-        drawFilledRect(400, baseY - 15, 100, 30, 0x00);
-    }
+    // Current time indicator (black vertical line)
+    time_t now = time(nullptr);
+    struct tm *timeinfo = localtime(&now);
+    float dayProgress = (timeinfo->tm_hour * 60 + timeinfo->tm_min) / (24.0f * 60);
+    int currentX = PADDING + (EPD_WIDTH - 2 * PADDING) * dayProgress;
+    epd_draw_vline(currentX, TIMELINE_Y - 15, 30, 0, framebuffer);
 }
 
-void drawRoomDisplay() {
-    if (!framebuffer) return;
+void drawLastUpdated(const char* timestamp, uint8_t *framebuffer) {
+    int x = PADDING;
+    int y = EPD_HEIGHT - PADDING;
+    char updateText[64];
+    snprintf(updateText, sizeof(updateText), "Last updated: %s", timestamp);
+    write_string(&FiraSans, updateText, &x, &y, framebuffer);
+}
 
-    // Clear the entire display first
+void drawRoomDisplay(Room &currentRoom, uint8_t *framebuffer) {
+    if (!framebuffer) return;
+    
+    // Clear display
     memset(framebuffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
     
-    // Draw room number (large, top-left)
-    int cursor_x = 50;
-    int cursor_y = 80;
-    clearArea(40, cursor_y - 60, 200, 80);  // Clear area before drawing
-    drawText(currentRoom.id.c_str(), cursor_x, cursor_y);
+    // Draw components
+    drawHeader(currentRoom, framebuffer);
     
-    // Draw capacity number (top-right)
-    char capacityText[10];
-    snprintf(capacityText, sizeof(capacityText), "%d", currentRoom.capacity);
-    cursor_x = cursor_x + 100;
-    cursor_y = 80;
-    clearArea(cursor_x - 10, cursor_y - 60, 100, 80);  // Clear area before drawing
-    drawText(capacityText, cursor_x, cursor_y);
-    
-    // Draw status box (top-right)
-    const char* statusText = currentRoom.occupied ? "OCCUPIED" : "AVAILABLE";
-    int status_x = EPD_WIDTH - 200;
-    clearArea(status_x - 10, 10, 200, 70);  // Clear area before drawing
-    drawFilledRect(status_x, 20, 180, 50, currentRoom.occupied ? 0x00 : 0x0F);
-    
-    // Draw status text
-    cursor_x = status_x + 20;
-    cursor_y = 55;
-    
-    if (currentRoom.occupied) {
-        uint8_t *tempBuffer = (uint8_t *)ps_calloc(sizeof(uint8_t), 180 * 50 / 2);
-        if (tempBuffer) {
-            memset(tempBuffer, 0xFF, 180 * 50 / 2);
-            int temp_x = 20, temp_y = 35;
-            write_string((GFXfont *)&FiraSans, (char*)statusText, &temp_x, &temp_y, tempBuffer);
-            
-            for (int i = 0; i < 180 * 50 / 2; i++) {
-                uint8_t value = ~tempBuffer[i];
-                framebuffer[(20 * EPD_WIDTH + status_x) / 2 + i] = value;
-            }
-            free(tempBuffer);
-        }
-    } else {
-        drawText(statusText, cursor_x, cursor_y);
-    }
-
-    // Clear meeting areas
-    clearArea(40, 110, EPD_WIDTH - 80, 300);
-    
-    // Draw current meeting box
-    if (currentRoom.occupied && currentRoom.currentMeeting.name.length() > 0) {
-        char timeRange[50];
-        snprintf(timeRange, sizeof(timeRange), "%s -%s", 
-                currentRoom.currentMeeting.startTime.c_str(),
-                currentRoom.currentMeeting.endTime.c_str());
-        drawMeetingBox("CURRENT MEETING", 
-                      currentRoom.currentMeeting.name.c_str(),
-                      timeRange,
-                      50, 120, true);
-    }
-    
-    // Draw next meeting box
-    if (currentRoom.nextMeeting.name.length() > 0) {
-        char nextTimeRange[50];
-        snprintf(nextTimeRange, sizeof(nextTimeRange), "%s -%s", 
-                currentRoom.nextMeeting.startTime.c_str(),
-                currentRoom.nextMeeting.endTime.c_str());
-        drawMeetingBox("NEXT MEETING",
-                      currentRoom.nextMeeting.name.c_str(),
-                      nextTimeRange,
-                      450, 120, false);
-    }
-    
-    // Clear timeline area
-    clearArea(40, EPD_HEIGHT - 120, EPD_WIDTH - 80, 100);
+    // Draw meeting boxes
+    int meetingBoxY = MAIN_CONTENT_Y;
+    drawMeetingBox("CURRENT MEETING", currentRoom.currentMeeting,
+                  PADDING, meetingBoxY, true, framebuffer);
+    drawMeetingBox("NEXT MEETING", currentRoom.nextMeeting,
+                  EPD_WIDTH/2 + PADDING/2, meetingBoxY, false, framebuffer);
     
     // Draw timeline
-    drawTimeline();
+    drawTimeline(currentRoom, framebuffer);
     
-    // Clear and draw last updated text
-    clearArea(40, EPD_HEIGHT - 40, 300, 30);
-    cursor_x = 50;
-    cursor_y = EPD_HEIGHT - 20;
-    drawText(currentRoom.lastUpdated.c_str(), cursor_x, cursor_y);
+    // Draw last updated
+    drawLastUpdated(currentRoom.lastUpdated.c_str(), framebuffer);
     
     // Update display
     epd_draw_grayscale_image(epd_full_screen(), framebuffer);
@@ -340,7 +350,7 @@ void handleButton(Button2& btn) {
     // Manual refresh on button press
     if (fetchRoomData()) {
         epd_poweron();
-        drawRoomDisplay();
+        drawRoomDisplay(currentRoom, framebuffer);
         epd_poweroff();
     }
 }
@@ -389,7 +399,7 @@ void setup() {
         Serial.println("Room data fetched successfully");
         epd_poweron();
         epd_clear();
-        drawRoomDisplay();
+        drawRoomDisplay(currentRoom, framebuffer);
         epd_poweroff();
     } else {
         Serial.println("Failed to fetch room data!");
@@ -407,7 +417,8 @@ void loop() {
     if (millis() - lastUpdate >= UPDATE_INTERVAL) {
         if (fetchRoomData()) {
             epd_poweron();
-            drawRoomDisplay();
+            //epd_clear();
+            drawRoomDisplay(currentRoom, framebuffer);
             epd_poweroff();
         }
         lastUpdate = millis();
